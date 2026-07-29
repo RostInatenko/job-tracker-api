@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApplicationStatus } from '@prisma/client';
@@ -17,6 +18,9 @@ function normalizeToIsoDateTime(value: unknown): unknown {
 }
 
 export class CreateApplicationDto {
+  @IsOptional()
+  @IsUUID()
+  id?: string;
   @IsNotEmpty()
   @IsString()
   company: string;

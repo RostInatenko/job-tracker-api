@@ -1,4 +1,6 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateApplicationDto } from './create-application.dto';
 
-export class UpdateApplicationDto extends PartialType(CreateApplicationDto) {}
+export class UpdateApplicationDto extends PartialType(
+  OmitType(CreateApplicationDto, ['id'] as const),
+) {}

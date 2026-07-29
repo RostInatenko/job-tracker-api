@@ -11,6 +11,7 @@ export class ApplicationsService {
   create(dto: CreateApplicationDto, userId: number): Promise<Application> {
     return this.prismaService.application.create({
       data: {
+        ...(dto.id ? { id: dto.id } : {}),
         company: dto.company,
         role: dto.role,
         status: dto.status,
