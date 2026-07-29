@@ -9,7 +9,9 @@ import { ApplicationsModule } from './applications/applications.module';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
+    ThrottlerModule.forRoot([
+      { ttl: 60000, limit: Number(process.env.THROTTLE_LIMIT) || 20 },
+    ]),
     PrismaModule,
     AuthModule,
     ApplicationsModule,
