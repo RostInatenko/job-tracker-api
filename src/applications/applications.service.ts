@@ -18,6 +18,8 @@ export class ApplicationsService {
         dateApplied: dto.dateApplied,
         notes: dto.notes ?? null,
         link: dto.link ?? null,
+        techStack: dto.techStack ?? [],
+        salary: dto.salary ?? null,
         userId,
       },
     });

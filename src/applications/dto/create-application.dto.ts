@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsDateString,
   IsEnum,
   IsNotEmpty,
@@ -40,4 +41,11 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsString()
   link?: string;
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  techStack?: string[];
+  @IsOptional()
+  @IsString()
+  salary?: string;
 }
