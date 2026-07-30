@@ -39,6 +39,10 @@ export class AuthController {
   refresh(@Req() req: Request) {
     return this.authService.refresh(req.cookies.refreshToken);
   }
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('refreshToken');
+  }
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
   getMe(@Req() req: Request) {
