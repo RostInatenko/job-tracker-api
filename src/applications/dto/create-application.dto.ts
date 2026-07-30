@@ -6,9 +6,11 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  ValidateNested,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApplicationStatus } from '@prisma/client';
+import { InterviewStageDto } from './interview-stage.dto';
 
 function normalizeToIsoDateTime(value: unknown): unknown {
   if (typeof value !== 'string') {
@@ -48,4 +50,9 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsString()
   salary?: string;
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InterviewStageDto)
+  interviewStages?: InterviewStageDto[];
 }

@@ -30,6 +30,7 @@ model Application {
   link        String?
   techStack   String[] @default([])
   salary      String?
+  interviewStages Json  @default("[]")
   userId      Int
   user        User              @relation(fields: [userId], references: [id])
 

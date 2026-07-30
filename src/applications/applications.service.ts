@@ -3,7 +3,7 @@ import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { FindApplicationsQueryDto } from './dto/find-applications-query.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { Application } from '@prisma/client';
+import { Application, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ApplicationsService {
@@ -20,6 +20,7 @@ export class ApplicationsService {
         link: dto.link ?? null,
         techStack: dto.techStack ?? [],
         salary: dto.salary ?? null,
+        interviewStages: (dto.interviewStages ?? []) as unknown as Prisma.InputJsonValue,
         userId,
       },
     });
@@ -64,7 +65,15 @@ export class ApplicationsService {
     userId: number,
   ): Promise<Application> {
     await this.findOne(id, userId);
-    return this.prismaService.application.update({ where: { id }, data: dto });
+    return this.prismaService.application.update({
+      where: { id },
+      data: {
+        ...dto,
+        interviewStages: dto.interviewStages as unknown as
+          | Prisma.InputJsonValue
+          | undefined,
+      },
+    });
   }
 
   async remove(id: string, userId: number): Promise<void> {
