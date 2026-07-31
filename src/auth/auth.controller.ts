@@ -11,7 +11,15 @@ import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import type { Request, Response } from 'express';
+import type { CookieOptions, Request, Response } from 'express';
+
+const isProduction = Boolean(process.env.CORS_ORIGIN);
+
+const refreshCookieOptions: CookieOptions = {
+  httpOnly: true,
+  sameSite: isProduction ? 'none' : 'lax',
+  secure: isProduction,
+};
 
 @Controller('auth')
 export class AuthController {
@@ -30,7 +38,7 @@ export class AuthController {
   ) {
     const { accessToken, refreshToken } = await this.authService.login(dto);
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
+      ...refreshCookieOptions,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     return { accessToken };
@@ -41,7 +49,7 @@ export class AuthController {
   }
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('refreshToken');
+    res.clearCookie('refreshToken', refreshCookieOptions);
   }
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
