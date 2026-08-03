@@ -18,6 +18,12 @@ enum ApplicationStatus {
   REJECTED
 }
 
+enum WorkMode {
+  OFFICE
+  HYBRID
+  REMOTE
+}
+
 model Application {
   id          String            @id @default(uuid()) @db.Uuid
   company     String
@@ -31,6 +37,7 @@ model Application {
   techStack   String[] @default([])
   salary      String?
   interviewStages Json  @default("[]")
+  workMode    WorkMode?
   userId      Int
   user        User              @relation(fields: [userId], references: [id])
 

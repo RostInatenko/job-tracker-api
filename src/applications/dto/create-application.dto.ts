@@ -9,7 +9,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { ApplicationStatus } from '@prisma/client';
+import { ApplicationStatus, WorkMode } from '@prisma/client';
 import { InterviewStageDto } from './interview-stage.dto';
 
 function normalizeToIsoDateTime(value: unknown): unknown {
@@ -55,4 +55,7 @@ export class CreateApplicationDto {
   @ValidateNested({ each: true })
   @Type(() => InterviewStageDto)
   interviewStages?: InterviewStageDto[];
+  @IsOptional()
+  @IsEnum(WorkMode)
+  workMode?: WorkMode;
 }

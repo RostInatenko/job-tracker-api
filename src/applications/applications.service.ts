@@ -21,6 +21,7 @@ export class ApplicationsService {
         techStack: dto.techStack ?? [],
         salary: dto.salary ?? null,
         interviewStages: (dto.interviewStages ?? []) as unknown as Prisma.InputJsonValue,
+        workMode: dto.workMode ?? null,
         userId,
       },
     });
