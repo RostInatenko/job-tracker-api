@@ -1,4 +1,4 @@
-import { IsDateString, IsNotEmpty, IsString } from 'class-validator';
+import { IsDateString, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class InterviewStageDto {
   @IsNotEmpty()
@@ -7,4 +7,7 @@ export class InterviewStageDto {
   @IsNotEmpty()
   @IsDateString()
   date: string;
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/, { message: 'time must be in HH:mm format' })
+  time?: string;
 }
