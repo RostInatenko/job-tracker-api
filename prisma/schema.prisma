@@ -38,6 +38,8 @@ model Application {
   salary      String?
   interviewStages Json  @default("[]")
   workMode    WorkMode?
+  archived    Boolean           @default(false)
+  heardBack   Boolean?
   userId      Int
   user        User              @relation(fields: [userId], references: [id])
 

@@ -196,6 +196,32 @@ describe('Applications (e2e)', () => {
         'Beta',
       ]);
     });
+
+    it('excludes archived applications by default and includes them with archived=true', async () => {
+      const created = await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenA))
+        .send({ ...baseApplication, company: 'Archived Co', archived: true });
+
+      const defaultRes = await request(app.getHttpServer())
+        .get('/applications')
+        .set(authHeader(tokenA))
+        .expect(200);
+      const defaultBody = defaultRes.body as ApplicationResponse[];
+      expect(defaultBody.some((application) => application.company === 'Archived Co')).toBe(
+        false,
+      );
+      expect(defaultBody).toHaveLength(3);
+
+      const archivedRes = await request(app.getHttpServer())
+        .get('/applications?archived=true')
+        .set(authHeader(tokenA))
+        .expect(200);
+      const archivedBody = archivedRes.body as ApplicationResponse[];
+      expect(archivedBody.map((application) => application.id)).toEqual([
+        (created.body as ApplicationResponse).id,
+      ]);
+    });
   });
 
   describe('ownership isolation on GET/PATCH/DELETE by id', () => {
@@ -381,6 +407,56 @@ describe('Applications (e2e)', () => {
         .expect(200);
 
       expect(res.body.staleApplicationsCount).toBe(1);
+    });
+
+    it('categorizes rejections by whether they responded and whether an interview happened', async () => {
+      await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenA))
+        .send({ ...baseApplication, company: 'Theta', status: 'REJECTED', heardBack: false });
+      await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenA))
+        .send({ ...baseApplication, company: 'Iota', status: 'REJECTED', heardBack: true });
+      await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenA))
+        .send({
+          ...baseApplication,
+          company: 'Kappa',
+          status: 'REJECTED',
+          heardBack: false,
+          interviewStages: [{ stage: 'HR screen', date: daysAgoIso(3) }],
+        });
+      await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenA))
+        .send({
+          ...baseApplication,
+          company: 'Lambda',
+          status: 'REJECTED',
+          heardBack: true,
+          interviewStages: [{ stage: 'HR screen', date: daysAgoIso(3) }],
+        });
+      await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenA))
+        .send({ ...baseApplication, company: 'Mu', status: 'REJECTED' });
+
+      const res = await request(app.getHttpServer())
+        .get('/applications/stats')
+        .set(authHeader(tokenA))
+        .expect(200);
+
+      expect(res.body.rejectionBreakdown).toEqual(
+        expect.arrayContaining([
+          { category: 'ghostedBeforeInterview', count: 1 },
+          { category: 'rejectedBeforeInterview', count: 1 },
+          { category: 'ghostedAfterInterview', count: 1 },
+          { category: 'rejectedAfterInterview', count: 1 },
+          { category: 'unknown', count: 1 },
+        ]),
+      );
     });
 
     it('merges tech stack entries that only differ by case', async () => {

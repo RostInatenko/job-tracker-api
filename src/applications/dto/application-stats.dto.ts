@@ -10,6 +10,18 @@ export interface StatusBreakdownEntry {
   count: number;
 }
 
+export type RejectionCategory =
+  | 'ghostedBeforeInterview'
+  | 'rejectedBeforeInterview'
+  | 'ghostedAfterInterview'
+  | 'rejectedAfterInterview'
+  | 'unknown';
+
+export interface RejectionBreakdownEntry {
+  category: RejectionCategory;
+  count: number;
+}
+
 export interface ApplicationStatsDto {
   totalApplications: number;
   responseRate: number;
@@ -18,4 +30,5 @@ export interface ApplicationStatsDto {
   topTechStack: TechStackFrequency[];
   statusBreakdown: StatusBreakdownEntry[];
   staleApplicationsCount: number;
+  rejectionBreakdown: RejectionBreakdownEntry[];
 }

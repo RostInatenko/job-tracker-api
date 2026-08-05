@@ -2,7 +2,12 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { FindApplicationsQueryDto } from './dto/find-applications-query.dto';
-import { ApplicationStatsDto, TechStackFrequency } from './dto/application-stats.dto';
+import {
+  ApplicationStatsDto,
+  RejectionBreakdownEntry,
+  RejectionCategory,
+  TechStackFrequency,
+} from './dto/application-stats.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Application, ApplicationStatus, Prisma } from '@prisma/client';
 
@@ -53,6 +58,16 @@ function rankTechStackFrequency(
     .slice(0, limit);
 }
 
+function categorizeRejection(hadInterview: boolean, heardBack: boolean | null): RejectionCategory {
+  if (heardBack === null) {
+    return 'unknown';
+  }
+  if (hadInterview) {
+    return heardBack ? 'rejectedAfterInterview' : 'ghostedAfterInterview';
+  }
+  return heardBack ? 'rejectedBeforeInterview' : 'ghostedBeforeInterview';
+}
+
 @Injectable()
 export class ApplicationsService {
   constructor(private readonly prismaService: PrismaService) {}
@@ -70,6 +85,8 @@ export class ApplicationsService {
         salary: dto.salary ?? null,
         interviewStages: (dto.interviewStages ?? []) as unknown as Prisma.InputJsonValue,
         workMode: dto.workMode ?? null,
+        archived: dto.archived ?? false,
+        heardBack: dto.heardBack ?? null,
         userId,
       },
     });
@@ -81,6 +98,7 @@ export class ApplicationsService {
   ): Promise<Application[]> {
     const {
       status,
+      archived = false,
       page = 1,
       limit = 20,
       sortBy = 'createdAt',
@@ -90,6 +108,7 @@ export class ApplicationsService {
     return this.prismaService.application.findMany({
       where: {
         userId,
+        archived,
         ...(status ? { status } : {}),
       },
       orderBy: { [sortBy]: sortOrder },
@@ -147,6 +166,7 @@ export class ApplicationsService {
     const interviewStageCounts: number[] = [];
     const techStackLists: string[][] = [];
     const statusCounts = new Map<ApplicationStatus, number>();
+    const rejectionCounts = new Map<RejectionCategory, number>();
     let staleApplicationsCount = 0;
     const now = Date.now();
 
@@ -175,6 +195,11 @@ export class ApplicationsService {
           staleApplicationsCount++;
         }
       }
+
+      if (application.status === 'REJECTED') {
+        const category = categorizeRejection(stages.length > 0, application.heardBack);
+        rejectionCounts.set(category, (rejectionCounts.get(category) ?? 0) + 1);
+      }
     }
 
     const topTechStack = rankTechStackFrequency(techStackLists, TOP_TECH_STACK_LIMIT);
@@ -186,6 +211,19 @@ export class ApplicationsService {
       count: statusCounts.get(status) ?? 0,
     }));
 
+    const rejectionBreakdown: RejectionBreakdownEntry[] = (
+      [
+        'ghostedBeforeInterview',
+        'rejectedBeforeInterview',
+        'ghostedAfterInterview',
+        'rejectedAfterInterview',
+        'unknown',
+      ] as RejectionCategory[]
+    ).map((category) => ({
+      category,
+      count: rejectionCounts.get(category) ?? 0,
+    }));
+
     return {
       totalApplications,
       responseRate,
@@ -194,6 +232,7 @@ export class ApplicationsService {
       topTechStack,
       statusBreakdown,
       staleApplicationsCount,
+      rejectionBreakdown,
     };
   }
 }

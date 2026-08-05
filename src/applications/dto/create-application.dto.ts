@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsNotEmpty,
@@ -58,4 +59,10 @@ export class CreateApplicationDto {
   @IsOptional()
   @IsEnum(WorkMode)
   workMode?: WorkMode;
+  @IsOptional()
+  @IsBoolean()
+  archived?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  heardBack?: boolean;
 }
