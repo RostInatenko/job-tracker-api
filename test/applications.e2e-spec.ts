@@ -266,4 +266,150 @@ describe('Applications (e2e)', () => {
         .expect(404);
     });
   });
+
+  describe('GET /applications/stats', () => {
+    function daysAgoIso(days: number): string {
+      const date = new Date();
+      date.setUTCDate(date.getUTCDate() - days);
+      return date.toISOString().slice(0, 10);
+    }
+
+    beforeEach(async () => {
+      const apps = [
+        {
+          company: 'Acme',
+          role: 'Backend Dev',
+          status: 'APPLIED',
+          dateApplied: daysAgoIso(5),
+          techStack: ['React', 'TypeScript'],
+        },
+        {
+          company: 'Beta',
+          role: 'Backend Dev',
+          status: 'INTERVIEW',
+          dateApplied: daysAgoIso(10),
+          techStack: ['React', 'Node.js'],
+          interviewStages: [{ stage: 'HR screen', date: daysAgoIso(7) }],
+        },
+        {
+          company: 'Gamma',
+          role: 'Backend Dev',
+          status: 'OFFER',
+          dateApplied: daysAgoIso(20),
+          techStack: ['TypeScript'],
+          interviewStages: [
+            { stage: 'HR screen', date: daysAgoIso(18) },
+            { stage: 'Tech interview', date: daysAgoIso(15) },
+          ],
+        },
+        {
+          company: 'Delta',
+          role: 'Backend Dev',
+          status: 'APPLIED',
+          dateApplied: daysAgoIso(40),
+        },
+      ];
+      for (const application of apps) {
+        await request(app.getHttpServer())
+          .post('/applications')
+          .set(authHeader(tokenA))
+          .send(application);
+      }
+      await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenB))
+        .send({ ...baseApplication, company: "UserB's Company" });
+    });
+
+    it('rejects an unauthenticated request', async () => {
+      await request(app.getHttpServer()).get('/applications/stats').expect(401);
+    });
+
+    it("only aggregates the requesting user's applications", async () => {
+      const res = await request(app.getHttpServer())
+        .get('/applications/stats')
+        .set(authHeader(tokenA))
+        .expect(200);
+
+      expect(res.body.totalApplications).toBe(4);
+    });
+
+    it('computes the response rate and status breakdown', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/applications/stats')
+        .set(authHeader(tokenA))
+        .expect(200);
+
+      expect(res.body.responseRate).toBe(50);
+      expect(res.body.statusBreakdown).toEqual(
+        expect.arrayContaining([
+          { status: 'APPLIED', count: 2 },
+          { status: 'INTERVIEW', count: 1 },
+          { status: 'OFFER', count: 1 },
+          { status: 'REJECTED', count: 0 },
+        ]),
+      );
+    });
+
+    it('computes average days to first interview and average interview stage count', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/applications/stats')
+        .set(authHeader(tokenA))
+        .expect(200);
+
+      expect(res.body.avgDaysToFirstInterview).toBe(2.5);
+      expect(res.body.avgInterviewStageCount).toBe(1.5);
+    });
+
+    it('ranks tech stack frequency', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/applications/stats')
+        .set(authHeader(tokenA))
+        .expect(200);
+
+      expect(res.body.topTechStack).toEqual([
+        { tech: 'React', count: 2 },
+        { tech: 'TypeScript', count: 2 },
+        { tech: 'Node.js', count: 1 },
+      ]);
+    });
+
+    it('counts applications stale for 30+ days in Applied', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/applications/stats')
+        .set(authHeader(tokenA))
+        .expect(200);
+
+      expect(res.body.staleApplicationsCount).toBe(1);
+    });
+
+    it('merges tech stack entries that only differ by case', async () => {
+      await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenA))
+        .send({ ...baseApplication, company: 'Epsilon', techStack: ['git', 'Docker'] });
+      await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenA))
+        .send({ ...baseApplication, company: 'Zeta', techStack: ['Git', 'docker'] });
+      await request(app.getHttpServer())
+        .post('/applications')
+        .set(authHeader(tokenA))
+        .send({ ...baseApplication, company: 'Eta', techStack: ['GIT'] });
+
+      const res = await request(app.getHttpServer())
+        .get('/applications/stats')
+        .set(authHeader(tokenA))
+        .expect(200);
+
+      const gitEntry = res.body.topTechStack.find(
+        (entry: { tech: string; count: number }) => entry.tech.toLowerCase() === 'git',
+      );
+      const dockerEntry = res.body.topTechStack.find(
+        (entry: { tech: string; count: number }) => entry.tech.toLowerCase() === 'docker',
+      );
+      expect(gitEntry).toEqual({ tech: 'git', count: 3 });
+      expect(dockerEntry).toEqual({ tech: 'Docker', count: 2 });
+    });
+  });
 });
