@@ -100,6 +100,7 @@ export class ApplicationsService {
     const {
       status,
       archived = false,
+      search,
       page = 1,
       limit = 20,
       sortBy = 'createdAt',
@@ -111,6 +112,15 @@ export class ApplicationsService {
         userId,
         archived,
         ...(status ? { status } : {}),
+        ...(search
+          ? {
+              OR: [
+                { company: { contains: search, mode: 'insensitive' } },
+                { role: { contains: search, mode: 'insensitive' } },
+                { location: { contains: search, mode: 'insensitive' } },
+              ],
+            }
+          : {}),
       },
       orderBy: { [sortBy]: sortOrder },
       skip: (page - 1) * limit,

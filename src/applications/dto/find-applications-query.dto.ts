@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsIn, IsInt, IsOptional, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsIn, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApplicationStatus } from '@prisma/client';
 
@@ -11,6 +11,10 @@ export class FindApplicationsQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   archived?: boolean;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @IsOptional()
   @Type(() => Number)
