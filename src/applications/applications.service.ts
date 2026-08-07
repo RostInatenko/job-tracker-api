@@ -85,6 +85,7 @@ export class ApplicationsService {
         salary: dto.salary ?? null,
         interviewStages: (dto.interviewStages ?? []) as unknown as Prisma.InputJsonValue,
         workMode: dto.workMode ?? null,
+        location: dto.location ?? null,
         archived: dto.archived ?? false,
         heardBack: dto.heardBack ?? null,
         userId,

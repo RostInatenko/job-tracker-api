@@ -38,6 +38,7 @@ model Application {
   salary      String?
   interviewStages Json  @default("[]")
   workMode    WorkMode?
+  location    String?
   archived    Boolean           @default(false)
   heardBack   Boolean?
   userId      Int

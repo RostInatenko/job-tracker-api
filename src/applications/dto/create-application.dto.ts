@@ -60,6 +60,9 @@ export class CreateApplicationDto {
   @IsEnum(WorkMode)
   workMode?: WorkMode;
   @IsOptional()
+  @IsString()
+  location?: string;
+  @IsOptional()
   @IsBoolean()
   archived?: boolean;
   @IsOptional()
